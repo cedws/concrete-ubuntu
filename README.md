@@ -1,7 +1,7 @@
 # immubuntu
 A small UEFI + Secure Bootable Ubuntu image built entirely in Docker. This was mostly an experiment to see if OS images could be built reasonably without heavy and slow solutions like Packer.
 
-Building images inside Docker requires a few tricks detailed in my blog post.
+Building images inside Docker requires a few tricks detailed in [my blog post](https://cedwards.xyz/building-os-images-in-docker/).
 
 ## Features
 * Built entirely in Docker
