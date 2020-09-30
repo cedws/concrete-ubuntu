@@ -34,7 +34,7 @@ RUN apt-get update && \
     apt-get install -yq --no-install-recommends squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools
 
 # Create empty file for containing the partitions
-RUN fallocate -s 2GiB image.img
+RUN fallocate -l 2GiB image.img
 
 # Set up partition table
 # 100MiB (EFI System Partition)
