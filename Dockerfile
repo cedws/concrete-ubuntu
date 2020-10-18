@@ -5,13 +5,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install some base packages for the system
 RUN apt-get update && \
-    apt-get install -yq --no-install-recommends linux-image-generic systemd systemd-sysv dbus sudo overlayroot
+    apt-get install -yq --no-install-recommends \
+        linux-image-generic systemd nano systemd-sysv dbus sudo overlayroot
+
+COPY ./fs/* /
 
 RUN useradd -m ubuntu -G sudo -s /bin/bash
 RUN --mount=type=secret,id=secret chpasswd < /run/secrets/secret
-
-COPY ./fs/etc/hostname /etc/
-COPY ./fs/etc/hosts /etc/
 
 RUN cp /usr/share/systemd/tmp.mount /lib/systemd/system
 
@@ -19,9 +19,6 @@ RUN cp /usr/share/systemd/tmp.mount /lib/systemd/system
 RUN systemctl enable tmp.mount
 # Enable systemd-networkd for bringing up network
 RUN systemctl enable systemd-networkd
-
-COPY ./fs/etc/systemd/network/10-ethernet.network /etc/systemd/network/
-COPY ./fs/etc/resolv.conf /etc/
 
 
 FROM ubuntu:20.04 AS build
@@ -31,7 +28,8 @@ WORKDIR /root
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -yq --no-install-recommends squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools
+    apt-get install -yq --no-install-recommends \
+        squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools
 
 # Create empty file for containing the partitions
 RUN fallocate -l 2GiB image.img
@@ -82,20 +80,6 @@ RUN mkfs.fat -C esp.img \
 # Then dd it into the main image without truncating
 RUN mcopy -s -i esp.img esp/* ::
 
-# Copy the rootfs we built in the earlier stage
-COPY --from=rootfs / rootfs/
-
-# Pack the rootfs into a squash image
-# GRUB is able to load the kernel and initramfs inside on boot
-RUN mkdir -p squash
-RUN mksquashfs rootfs/ squash/rootfs.squash
-
-# Make new EXT4 image initialised with contents of squash/
-# Specify the UUID we want to create it with which matches up with our GRUB config
-# Create it with the calculate correct size, bearing in mind default block size of 1024
-RUN mkfs.ext4 -d squash/ squash.img -U a185a4b8-f920-4c5d-8b19-8d5a9e49024e \
-    $(((${ROOT_END_SECTOR} - ${ROOT_START_SECTOR}) / 2))
-
 # Make new EXT4 image
 # Specify the LABEL should be OVERLAY which makes mounting it easier later on
 # Create it with the calculate correct size, bearing in mind default block size of 1024
@@ -106,9 +90,21 @@ RUN mkfs.ext4 -L OVERLAY overlay.img \
 # For each partition, seek to the sector it should start at
 # conv=notrunc ensures that no truncation of the image occurs after each command
 RUN dd if=esp.img of=image.img seek=${ESP_START_SECTOR} status=progress conv=notrunc
-RUN dd if=squash.img of=image.img seek=${ROOT_START_SECTOR} status=progress conv=notrunc
 RUN dd if=overlay.img of=image.img seek=${OVLAY_START_SECTOR} status=progress conv=notrunc
 
+# Pack the rootfs into a squash image
+# GRUB is able to load the kernel and initramfs inside on boot
+RUN mkdir -p squash
+RUN --mount=type=bind,from=rootfs,target=rootfs/ \
+    mksquashfs rootfs/ squash/rootfs.squash
+
+# Make new EXT4 image initialised with contents of squash/
+# Specify the UUID we want to create it with which matches up with our GRUB config
+# Create it with the calculate correct size, bearing in mind default block size of 1024
+RUN mkfs.ext4 -d squash/ squash.img -U a185a4b8-f920-4c5d-8b19-8d5a9e49024e \
+    $(((${ROOT_END_SECTOR} - ${ROOT_START_SECTOR}) / 2))
+
+RUN dd if=squash.img of=image.img seek=${ROOT_START_SECTOR} status=progress conv=notrunc
+
 FROM scratch AS export
-COPY --from=build /root/squash/rootfs.squash /
-COPY --from=build /root/image.img /
+COPY --from=build /root/squash/rootfs.squash /root/image.img /
