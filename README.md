@@ -16,6 +16,3 @@ Building images inside Docker requires a few tricks detailed in [my blog post](h
 * Encrypted flavour
 * Use EXT4 `data=journal` where possible
 * Create overlay filesystem on boot to reduce image size
-
-## License
-This project is currently unlicensed because there's some things I need to get sorted out.
