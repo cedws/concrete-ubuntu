@@ -31,6 +31,8 @@ RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
         squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools
 
+COPY ./utils/sectors.sh .
+
 # Create empty file for containing the partitions
 RUN fallocate -l 2GiB image.img
 
@@ -44,18 +46,6 @@ RUN parted image.img \
     mkpart primary 100MiB 1GiB \
     mkpart primary 1GiB 100% \
     set 1 esp on
-
-# List of start/end sectors for each partition we created above
-# If you change the partition layout, chances are that these values will need changing too
-# Find them using fdisk -l on the target image
-ENV ESP_START_SECTOR    2048
-ENV ESP_END_SECTOR      204799
-
-ENV ROOT_START_SECTOR   204800
-ENV ROOT_END_SECTOR     2097151
-
-ENV OVLAY_START_SECTOR  2097152
-ENV OVLAY_END_SECTOR    4192255
 
 RUN mkdir -p esp/EFI/BOOT esp/EFI/ubuntu esp/grub
 
@@ -72,9 +62,8 @@ RUN cp /usr/lib/shim/mmx64.efi esp/EFI/ubuntu/mmx64.efi
 RUN cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed esp/EFI/ubuntu/grubx64.efi
 
 # Create new FAT image for the ESP
-# Calculate the correct size, bearing in mind that mkfs.fat has a default block size of 512
 RUN mkfs.fat -C esp.img \
-    $((${ESP_END_SECTOR} - ${ESP_START_SECTOR}))
+    $(./sectors.sh size image.img 1)
 
 # Copy the contents of esp/ into the FAT esp.img
 # Then dd it into the main image without truncating
@@ -82,15 +71,17 @@ RUN mcopy -s -i esp.img esp/* ::
 
 # Make new EXT4 image
 # Specify the LABEL should be OVERLAY which makes mounting it easier later on
-# Create it with the calculate correct size, bearing in mind default block size of 1024
+# Create it with the calculated correct size, bearing in mind default block size of 1024
 RUN mkfs.ext4 -L OVERLAY overlay.img \
-    $(((${OVLAY_END_SECTOR} - ${OVLAY_START_SECTOR}) / 2))
+    $(( $(./sectors.sh size image.img 3) / 2 ))
 
 # Combine the individual partitions into the main image
 # For each partition, seek to the sector it should start at
 # conv=notrunc ensures that no truncation of the image occurs after each command
-RUN dd if=esp.img of=image.img seek=${ESP_START_SECTOR} status=progress conv=notrunc
-RUN dd if=overlay.img of=image.img seek=${OVLAY_START_SECTOR} status=progress conv=notrunc
+RUN dd if=esp.img of=image.img status=progress conv=notrunc \
+    seek=$(./sectors.sh start image.img 1)
+RUN dd if=overlay.img of=image.img status=progress conv=notrunc \
+    seek=$(./sectors.sh start image.img 3)
 
 # Pack the rootfs into a squash image
 # GRUB is able to load the kernel and initramfs inside on boot
@@ -102,9 +93,10 @@ RUN --mount=type=bind,from=rootfs,target=rootfs/ \
 # Specify the UUID we want to create it with which matches up with our GRUB config
 # Create it with the calculate correct size, bearing in mind default block size of 1024
 RUN mkfs.ext4 -d squash/ squash.img -U a185a4b8-f920-4c5d-8b19-8d5a9e49024e \
-    $(((${ROOT_END_SECTOR} - ${ROOT_START_SECTOR}) / 2))
+    $(( $(./sectors.sh size image.img 2) / 2 ))
 
-RUN dd if=squash.img of=image.img seek=${ROOT_START_SECTOR} status=progress conv=notrunc
+RUN dd if=squash.img of=image.img status=progress conv=notrunc \
+    seek=$(./sectors.sh start image.img 2)
 
 FROM scratch AS export
 COPY --from=build /root/squash/rootfs.squash /root/image.img /
