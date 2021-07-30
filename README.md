@@ -11,8 +11,4 @@ Building images inside Docker requires a few tricks detailed in [my blog post](h
 * Resettable without reburn
 * Fast and simple to build by leveraging Docker's layer cache
 
-## TODO
-* QEMU/VBOX conversion
-* Encrypted flavour
-* Use EXT4 `data=journal` where possible
-* Create overlay filesystem on boot to reduce image size
+This project is not associated with Ubuntu or Canonical. Ubuntu is a registered trademark of Canonical Ltd.
