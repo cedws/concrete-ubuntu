@@ -1,12 +1,6 @@
-FROM ubuntu:20.04 AS build
+FROM ghcr.io/cedws/concrete-ubuntu:builder AS build
 
 WORKDIR /root
-
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
-        wget squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools ca-certificates
 
 RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.4-base-amd64.tar.gz
 
