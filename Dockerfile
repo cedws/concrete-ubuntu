@@ -6,13 +6,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
-        wget squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools
+        wget squashfs-tools dosfstools parted udev grub2 grub-efi-amd64-signed shim-signed mtools ca-certificates
 
-RUN wget --no-check-certificate \
-    https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.2-base-amd64.tar.gz
+RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.4-base-amd64.tar.gz
 
 RUN mkdir rootfs/
-RUN tar -C rootfs/ -xf ubuntu-base-20.04.2-base-amd64.tar.gz
+RUN tar -C rootfs/ -xf rootfs.tar.gz
 
 COPY ./fs/etc rootfs/etc
 
