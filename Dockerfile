@@ -2,21 +2,21 @@ FROM ghcr.io/cedws/concrete-ubuntu:builder AS build
 
 WORKDIR /root
 
-RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.4-base-amd64.tar.gz
+RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04-base-amd64.tar.gz
 
 RUN mkdir rootfs/
 RUN tar -C rootfs/ -xf rootfs.tar.gz
 
 COPY ./fs/etc rootfs/etc
 
-RUN chroot rootfs/ \
+RUN fakeroot fakechroot chroot rootfs/ \
     apt-get update
 
 RUN chroot rootfs/ \
     apt-get install -yq --no-install-recommends \
         linux-image-generic initramfs-tools parted overlayroot systemd systemd-sysv dbus sudo
 
-RUN chroot rootfs/ \
+RUN fakeroot fakechroot chroot rootfs/ \
     apt-get clean
 
 RUN chroot rootfs/ \
