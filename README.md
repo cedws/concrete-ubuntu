@@ -1,7 +1,7 @@
 # concrete-ubuntu
 A small UEFI + Secure Bootable Ubuntu image built entirely in Docker. This was mostly an experiment to see if OS images could be built reasonably without heavy and slow solutions like Packer.
 
-Building images inside Docker requires a few tricks detailed in [my blog post](https://cedwards.xyz/building-os-images-in-docker/). You may also be interested in [xr](https://github.com/cedws/xr) - a work in progress new tool for image building.
+Building images inside Docker requires a few tricks detailed in [my blog post](https://cedwards.xyz/building-os-images-in-docker/).
 
 ## Features
 * Built entirely in Docker
