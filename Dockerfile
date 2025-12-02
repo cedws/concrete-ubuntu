@@ -37,8 +37,8 @@ RUN fallocate -l 1GiB image.img
 RUN parted -s -- image.img \
     mktable gpt \
     mkpart primary 0% 100MiB \
-    mkpart primary 100MiB -16MiB \
-    mkpart primary -16MiB 100% \
+    mkpart primary 100MiB -512MiB \
+    mkpart primary -512MiB 100% \
     set 1 esp on
 
 RUN mkdir -p esp/EFI/BOOT esp/EFI/ubuntu esp/grub

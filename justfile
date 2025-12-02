@@ -1,10 +1,11 @@
-OUTPUT := "build/image.img"
+OUTPUT := "build/ubuntu-24.04-minimal.img"
 
 default: build run
 
 # Build the image using Docker
 build:
     DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -o build --progress=plain .
+    mv build/image.img {{OUTPUT}}
 
 # Run the image in QEMU
 run:
