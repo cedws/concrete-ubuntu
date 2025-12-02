@@ -2,7 +2,7 @@ FROM ghcr.io/cedws/concrete-ubuntu:builder AS build
 
 WORKDIR /root
 
-RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04-base-amd64.tar.gz
+RUN wget -O rootfs.tar.gz https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-amd64.tar.gz
 
 RUN mkdir rootfs/
 RUN tar -C rootfs/ -xf rootfs.tar.gz
@@ -14,7 +14,7 @@ RUN fakeroot fakechroot chroot rootfs/ \
 
 RUN chroot rootfs/ \
     apt-get install -yq --no-install-recommends \
-        linux-image-generic initramfs-tools parted overlayroot systemd systemd-sysv dbus sudo
+    linux-image-generic initramfs-tools parted overlayroot systemd systemd-sysv dbus sudo
 
 RUN fakeroot fakechroot chroot rootfs/ \
     apt-get clean
