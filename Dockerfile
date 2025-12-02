@@ -8,13 +8,15 @@ RUN mkdir rootfs/
 RUN tar -C rootfs/ -xf rootfs.tar.gz
 
 COPY ./fs/etc rootfs/etc
+COPY ./fs/usr rootfs/usr
 
 RUN fakeroot fakechroot chroot rootfs/ \
     apt-get update
 
 RUN chroot rootfs/ \
     apt-get install -yq --no-install-recommends \
-    linux-image-generic initramfs-tools parted overlayroot systemd systemd-sysv dbus sudo
+    linux-image-generic initramfs-tools parted overlayroot systemd systemd-sysv dbus sudo \
+    cloud-guest-utils gdisk e2fsprogs
 
 RUN fakeroot fakechroot chroot rootfs/ \
     apt-get clean
@@ -24,6 +26,12 @@ RUN chroot rootfs/ \
 RUN chroot rootfs/ \
     bash -c 'echo "ubuntu:ubuntu" | chpasswd'
 
+# Enable grow-overlay service
+RUN chroot rootfs/ \
+    chmod +x /usr/local/bin/grow-overlay.sh
+RUN chroot rootfs/ \
+    systemctl enable grow-overlay.service
+
 # Only needed during install to prevent kernel/initrd symlinks from being created
 RUN chroot rootfs/ \
     rm /etc/kernel-img.conf
@@ -31,14 +39,14 @@ RUN chroot rootfs/ \
 COPY ./utils/sectors.sh .
 
 # Create empty file for containing the partitions
-RUN fallocate -l 1GiB image.img
+RUN fallocate -l 512MiB image.img
 
 # Set up partition table
 RUN parted -s -- image.img \
     mktable gpt \
     mkpart primary 0% 100MiB \
-    mkpart primary 100MiB -512MiB \
-    mkpart primary -512MiB 100% \
+    mkpart primary 100MiB -32MiB \
+    mkpart primary -32MiB 100% \
     set 1 esp on
 
 RUN mkdir -p esp/EFI/BOOT esp/EFI/ubuntu esp/grub
