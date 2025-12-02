@@ -1,6 +1,5 @@
 OUTPUT := "build/image.img"
 
-# Default recipe: build and run
 default: build run
 
 # Build the image using Docker
