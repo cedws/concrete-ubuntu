@@ -26,6 +26,10 @@ RUN chroot rootfs/ \
 RUN chroot rootfs/ \
     bash -c 'echo "ubuntu:ubuntu" | chpasswd'
 
+# Enable systemd-networkd
+RUN chroot rootfs/ \
+    systemctl enable systemd-networkd
+
 # Enable grow-overlay service
 RUN chroot rootfs/ \
     chmod +x /usr/local/bin/grow-overlay.sh
